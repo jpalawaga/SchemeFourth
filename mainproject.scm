@@ -60,15 +60,11 @@
   )
 
 (define (STACK x)
-  (if
-   ((> (length x) 0)
+  (cond ((not (empty? x))
      (display (first x))
      (display #\newline)
-     (STACK (rest stack))
-    )
-   '()
-   )
-)
+     (STACK (rest x)))
+  ))
 
 (define (main)
   (display "UofL> ")
@@ -101,7 +97,7 @@
      ( let ()
       (if (> (length input) 1)
          (display (string->stringList input))
-          (display (first stack)))    ((string-ci=? "drop" (first input)) (DROP))
+          (display (first stack)))
       (display #\newline)))
     )
    (when (> (length (rest input)) 0)
