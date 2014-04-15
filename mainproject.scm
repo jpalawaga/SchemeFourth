@@ -1,6 +1,8 @@
 #lang scheme
 (define first car)
 (define rest cdr)
+(define stack '())
+(define stackTemp '())
 
 (define (read-keyboard-as-list)    ; this function returns keyboard input as a list
             (let ((char (read-char)))
@@ -32,6 +34,19 @@
             )
 )
 
+(define (push_back element) 
+  (set! stack (append element stack) 
+       )
+  )
+
+(define (DROP) (begin 
+                 (define temp '() )
+                 (set! stack 
+                       (append temp (cdr stack) ) 
+                       )
+                 )
+  )
+
 (define (main)
   (printf "UofL> ")
   (define raw-input (read-keyboard-as-string))
@@ -58,8 +73,3 @@
        
      )
   ))
-
-(define (push_back value)
-  (printf "Pushing back: ")
-  (displayln (number->string value))
-  )
