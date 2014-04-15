@@ -1,4 +1,7 @@
 #lang scheme
+(define first car)
+(define rest cdr)
+
 (define (read-keyboard-as-list)    ; this function returns keyboard input as a list
             (let ((char (read-char)))
               (if (char=? char #\newline)
@@ -33,6 +36,21 @@
   (printf "UofL> ")
   (define raw-input (read-keyboard-as-string))
    (define input-list (string-split raw-input))
-   (printf (car input-list))
+   (parse-input input-list)
+   (main)
   )
 
+(define parse-input (lambda (input)
+  (cond
+    (string->number (first input) (push_back (string->number (first input))))
+    )
+   (when (> (length (rest input)) 0)
+       (parse-input (rest input))
+       
+     )
+  ))
+
+(define (push_back value)
+  (printf "Pushing back: ")
+  (displayln (number->string value))
+  )
