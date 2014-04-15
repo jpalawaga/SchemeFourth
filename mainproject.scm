@@ -3,20 +3,7 @@
 (define rest cdr)
 (define stack '())
 (define stackTemp '())
-
-(define (read-keyboard-as-list)    ; this function returns keyboard input as a list
-            (let ((char (read-char)))
-              (if (char=? char #\newline)
-                  '()
-                  (let loop ((char char))
-                     (if (char=? char #\newline)
-                         '()
-                         (cons char (loop (read-char)))
-                     )
-                  )
-              )
-            )
-)
+(define tempArea '())
 
 (define (read-keyboard-as-string) ; this function returns keyboard input as a string
             (let ((char (read-char)))
@@ -35,7 +22,7 @@
 )
 
 (define (push_back element) 
-  (set! stack (append element stack) 
+  (set! stack (append (list element) stack) 
        )
   )
 
@@ -46,6 +33,34 @@
                        )
                  )
   )
+(define drop DROP)
+
+(define (POP)
+  (set! tempArea (first stack))
+  (define x (first stack))
+  (set! stack (rest stack))
+  tempArea
+  )
+(define pop POP)
+
+(define (SAVE)
+  (push_back tempArea)
+  )
+(define save SAVE)
+
+(define (DUP)
+  (push_back (first stack))
+  )
+(define dup DUP)
+
+(define (SWAP)
+  (define x (first stack))
+  (pop)
+  (pop)
+  (push_back x)
+  (save)
+  )
+(define swap SWAP)
 
 (define (main)
   (printf "UofL> ")
@@ -66,7 +81,15 @@
     ((string=? "<" (first input)) (push_back (< (pop) (pop))))
     ((string=? ">=" (first input)) (push_back (>= (pop) (pop))))
     ((string=? "<=" (first input)) (push_back (<= (pop) (pop))))
-    ((string=? "." (first input)) (displayln "Top of stack"))
+    ((string=? "swap" (first input)) (swap))
+    ((string=? "dup" (first input)) (dup))
+    ((string=? "pop" (first input)) (pop))
+    ((string=? "save" (first input)) (swap))
+    ((string=? "drop" (first input)) (drop))
+    ((string=? "." (first input)) 
+     (if (> (length input) 1)
+         (push_back(string-join (rest input) " "))
+         (displayln (first stack))))
     )
    (when (> (length (rest input)) 0)
        (parse-input (rest input))
