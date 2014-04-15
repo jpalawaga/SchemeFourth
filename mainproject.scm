@@ -42,7 +42,16 @@
 
 (define parse-input (lambda (input)
   (cond
-    (string->number (first input) (push_back (string->number (first input))))
+    ((string->number (first input)) (push_back (string->number (first input))))
+    ((string=? "+" (first input)) (push_back (+ (pop) (pop))))
+    ((string=? "-" (first input)) (push_back (- (pop) (pop))))
+    ((string=? "/" (first input)) (push_back (/ (pop) (pop))))
+    ((string=? "*" (first input)) (push_back (* (pop) (pop))))
+    ((string=? ">" (first input)) (push_back (> (pop) (pop))))
+    ((string=? "<" (first input)) (push_back (< (pop) (pop))))
+    ((string=? ">=" (first input)) (push_back (>= (pop) (pop))))
+    ((string=? "<=" (first input)) (push_back (<= (pop) (pop))))
+    ((string=? "." (first input)) (displayln "Top of stack"))
     )
    (when (> (length (rest input)) 0)
        (parse-input (rest input))
