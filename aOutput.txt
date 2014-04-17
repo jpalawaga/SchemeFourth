@@ -1,0 +1,4 @@
+UofL> FUNC factorial dup pop save 1 > LOOP DROP SAVE 1 - DUP POP * SAVE POOL DROP CNUF
+(factorial)
+UofL> 5 factorial .
+120

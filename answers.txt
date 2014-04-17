@@ -8,7 +8,7 @@ FUNC DUP2 swap dup pop swap dup save swap CNUF
 FUNC compare DUP2 < IF DROP . "The greater value is " PRINT ELSE DROP SWAP . "The greater value is " PRINT SWAP THEN CNUF
 
 Initialize the stack with three empty values for the loop:
-1 1 1
+0 0 0
 
 Run the function:
 50 < LOOP DROP DUP 80 < LOOP DROP 1 + DUP compare POOL DROP POP 1 + DUP DUP POOL
