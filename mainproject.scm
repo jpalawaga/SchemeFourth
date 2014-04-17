@@ -8,6 +8,9 @@
 (define funcDefStarted #f)
 (define funcNames '() )
 (define grammarStack '())
+(define ifCount 0)
+(define ifQueue '())
+(define ignore #f)
 
 (define (read-keyboard-as-string) ; this function returns keyboard input as a string
             (let ((char (read-char)))
@@ -82,6 +85,43 @@
      (STACK (rest x)))
   ))
 
+(define (IF x tv)
+  (cond
+    ((not tv) (cond
+                 ((string=? "IF" (first x)) (begin
+                                              (set! ifCount (+ ifCount 1))
+                                              (IF (rest x) #f)))
+                 ((string=? "THEN" (first x)) (begin
+                                                (set! ifCount (- ifCount 1))
+                                                (IF (rest x) #f)))
+                 ((string=? "ELSE" (first x)) (cond 
+                                                   ((= 0 ifCount) (IF (rest x) #t))
+                                                   (else (IF (rest x) #f))))
+                 (else (IF (rest x) #f))))
+    (else (begin
+            (if (not ignore) (set! ifQueue (append ifQueue (list (first x)))))
+            (cond
+              ((string=? "IF" (first x)) (begin
+                                           (set! ifCount (+ ifCount 1))
+                                           (IF (rest x) #t)))
+              ((string=? "THEN" (first x)) (cond
+                                             ((= 0 ifCount) (begin
+                                                              (if (not ignore)
+                                                                  (set! ifQueue (reverse (cdr (reverse ifQueue)))))
+                                                              (parse-input ifQueue)
+                                                              (if (not (empty? (rest x)))
+                                                                  (parse-input (rest x)))))
+                                             (else (begin
+                                                     (set! ifCount (- ifCount 1))
+                                                     (IF (rest x) #t)))))
+              ((string=? "ELSE" (first x)) (cond 
+                                             ((= 0 ifCount) (begin
+                                                              (set! ignore #t)
+                                                              (set! ifQueue (reverse (cdr (reverse ifQueue))))
+                                                              (IF (rest x) #t)))
+                                             (else
+                                              (IF (rest x) #t))))
+              (else (IF (rest x) #t)))))))
 
 ; truth condition is already on top of the stack
 (define (LOOP x)
@@ -187,11 +227,11 @@
       (begin  
         (set! currentCommand (append currentCommand (list (first input))))
         (cond
-          ((string-ci=? "if" (first input)) (push_grammar(first input)))
-          ((string-ci=? "loop" (first input)) (push_grammar(first input)))
-          ((string-ci=? "else" (first input)) (if (string-ci=? "if" (first grammarStack)) (set-cdr! grammarStack (first input)) (set! errFree #f))) 
-          ((string-ci=? "then" (first input)) (if (string-ci=? "else" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f)))
-          ((string-ci=? "pool" (first input)) (if (string-ci=? "loop" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f))))))
+          ((string=? "IF" (first input)) (push_grammar(first input)))
+          ((string=? "LOOP" (first input)) (push_grammar(first input)))
+          ((string=? "ELSE" (first input)) (if (string=? "IF" (first grammarStack)) (set-car! grammarStack (first input)) (set! errFree #f))) 
+          ((string=? "THEN" (first input)) (if (string=? "ELSE" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f)))
+          ((string=? "POOL" (first input)) (if (string=? "LOOP" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f))))))
                         
   (if errFree
       (begin
@@ -220,20 +260,25 @@
     ((string=? "-" (first input)) (push_back (- (POP) (POP))))
     ((string=? "/" (first input)) (push_back (/ (POP) (POP))))
     ((string=? "*" (first input)) (push_back (* (POP) (POP))))
-    ((string=? ">" (first input)) (push_back (> (POP) (POP))))
-    ((string=? "<" (first input)) (push_back (< (POP) (POP))))
-    ((string=? ">=" (first input)) (push_back (>= (POP) (POP))))
+    ((string=? ">" (first input)) (begin (SWAP) (push_back (> (POP) (POP)))))
+    ((string=? "<" (first input)) (begin (SWAP) (push_back (< (POP) (POP)))))
+    ((string=? ">=" (first input)) (begin (SWAP) (push_back (>= (POP) (POP)))))
     ((string=? "<=" (first input)) (begin (SWAP) (push_back (<= (POP) (POP)))))
-    ((string-ci=? "swap" (first input)) (SWAP))
-    ((string-ci=? "dup" (first input)) (DUP))
-    ((string-ci=? "pop" (first input)) (SAVE_POP))
-    ((string-ci=? "save" (first input)) (SAVE))
-    ((string-ci=? "drop" (first input)) (DROP))
-    ((string-ci=? "clear" (first input)) (CLEAR))
-    ((string-ci=? "stack" (first input)) (STACK stack))
-    ((string-ci=? "loop" (first input)) (if (first stack) (LOOP (rest input) ) () ))
-    ((string-ci=? "func" (first input)) (FUNC (rest input)) )
-    ((string-ci=? "." (first input)) 
+    ((string=? "SWAP" (first input)) (SWAP))
+    ((string=? "DUP" (first input)) (DUP))
+    ((string=? "POP" (first input)) (SAVE_POP))
+    ((string=? "SAVE" (first input)) (SAVE))
+    ((string=? "DROP" (first input)) (DROP))
+    ((string=? "CLEAR" (first input)) (CLEAR))
+    ((string=? "STACK" (first input)) (STACK stack))
+    ((string=? "IF" (first input)) (begin
+                                     (set! ifCount 0)
+                                     (set! ifQueue '())
+                                     (set! ignore #f)
+                                     (IF (rest input) (first stack))))
+    ((string=? "LOOP" (first input)) (if (first stack) (LOOP (rest input) ) () ))
+    ((string=? "FUNC" (first input)) (FUNC (rest input)) )
+    ((string=? "." (first input)) 
      ( let ()
         (if (> (length input) 1)
             (display (string->stringList input))
@@ -252,7 +297,7 @@
                       
                       ;borat when clause. 'nawt nawt nawt'
                       ;THIS STATEMENT EXECUTES NOT
-   (when (and (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input)))) (not (string-ci=? "func" (first input))))
+   (when (and (and (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input)))) (not (string-ci=? "func" (first input))) (not (string-ci=? "if" (first input)))))
        (parse-input (rest input))
        
      )
