@@ -176,7 +176,9 @@
        (LOOP conditional body afterInstructions)
        ; Execute remainder of instructions
         )
-        (parse-input afterInstructions)
+      ( begin
+               (if (not (null? afterInstructions))
+                   (parse-input afterInstructions)))
     )
  )
 
@@ -193,7 +195,7 @@
   (getInstructions reversed)
 )
 
-(define (getLoopBody input)
+(define (getLoopBody input loopLevel)
   ; Nothing left to do
     (if (= 0 (length input))
       '()
@@ -201,21 +203,19 @@
   
   ; Change based on condition
    (cond
-    ((string-ci=? "loop" (first input)) (set! loopCount (+ 1 loopCount)))
-    ((string-ci=? "pool" (first input))
-      (set! loopCount (- loopCount 1))
-     )
+    ((string-ci=? "loop" (first input)) (set! loopLevel (+ 1 loopLevel)))
+    ((string-ci=? "pool" (first input)) (set! loopLevel (- loopLevel 1)))
     )
 
   ;
-  (if (>= loopCount 0)
-      (begin
-        (if (integer? (first input))
-            (append (number->string (first input)) (getLoopBody (rest input)))
-            (append (list (first input)) (getLoopBody (rest input)))
-            ))
-      '()
-   )
+  (if (> loopLevel 0)
+      (cond
+        ((and (= loopLevel 1) (string=? (first input) "LOOP"))
+           (getLoopBody (rest input) loopLevel))
+      (else
+          (append (list (first input)) (getLoopBody (rest input) loopLevel)))
+      )
+      '())
  )))
 
 
@@ -345,22 +345,22 @@
                                          (push_back (> (POP) x))
                                          (set! lastConditional (append (list (number->string x)) (list ">")))
                                          ))
-    ((string=? "<" (first input)) (let() (define x (POP))
+         ((string=? "<" (first input)) (let() (define x (POP))
                                          (push_back (< (POP) x))
                                          (set! lastConditional (append (list (number->string x)) (list "<")))
-
+                                         
                                          ))
-    ((string=? "<=" (first input)) (let()(define x (POP))
-                                         (push_back (<= (POP) x))
-                                         (set! lastConditional '()) 
-                                         (set! lastConditional (append (list (number->string x)) (list "<=")))
-                                         ))
-    
-    ((string=? ">=" (first input)) (let()(define x (POP))
-                                         (push_back (>= (POP) x))
-                                         (set! lastConditional '())
-                                         (set! lastConditional (append (list (number->string x)) (list ">=")))
-                                     ))
+         ((string=? "<=" (first input)) (let()(define x (POP))
+                                          (push_back (<= (POP) x))
+                                          (set! lastConditional '()) 
+                                          (set! lastConditional (append (list (number->string x)) (list "<=")))
+                                          ))
+         
+         ((string=? ">=" (first input)) (let()(define x (POP))
+                                          (push_back (>= (POP) x))
+                                          (set! lastConditional '())
+                                          (set! lastConditional (append (list (number->string x)) (list ">=")))
+                                          ))
     ((string-ci=? "SWAP" (first input)) (SWAP))
     ((string-ci=? "DUP" (first input)) (DUP))
     ((string-ci=? "POP" (first input)) (SAVE_POP))
@@ -373,7 +373,7 @@
                                      (set! ifQueue '())
                                      (set! ignore #f)
                                      (IF (rest input) (first stack))))
-    ((string-ci=? "LOOP" (first input)) (if (first stack) (LOOP (rest input) ) () ))
+    ((string-ci=? "LOOP" (first input)) (if (first stack) (LOOP lastConditional (getLoopBody input 0) (getAfterInstructions (rest input))) () ))
     ((string-ci=? "FUNC" (first input)) (FUNC (rest input)) )
     ((string-ci=? "." (first input)) 
      (cond
@@ -398,8 +398,7 @@
                       ;THIS STATEMENT EXECUTES NOT
    (when (and (and (and (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input)))) (not (string-ci=? "func" (first input)))) (not (string-ci=? "if" (first input)))) (not (string-ci=? "." (first input))))
        (parse-input (rest input))
-       
-     )
+         
   ))
   
 
