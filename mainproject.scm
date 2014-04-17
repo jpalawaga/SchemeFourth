@@ -43,25 +43,38 @@
     ((not quoteFlag)
      (cond
        ((equal? "\"" (substring (first x) 0 1)) (begin
-                                          (set! quoteFlag #t)
-                                          (set! messageQueue (append messageQueue (list (first x))))
-                                          (if (not (empty? (rest x)))
-                                              (stringSquish (rest x))
-                                              squishQueue)))
+                                                  (cond 
+                                                    ((equal? "\"" (substring (first x) (- (string-length (first x)) 1) (string-length (first x))))
+                                                     (begin
+                                                       (set! quoteFlag #f)
+                                                       (set! messageQueue (append messageQueue (list (first x))))
+                                                       (set! squishQueue (append squishQueue (list (string-join messageQueue))))
+                                                       (set! messageQueue '())
+                                                       (if (not (empty? (rest x)))
+                                                           (stringSquish (rest x))
+                                                           squishQueue)))
+                                                    (else
+                                                     (begin
+                                                       (set! quoteFlag #t)
+                                                       (set! messageQueue (append messageQueue (list (first x))))
+                                                       (if (not (empty? (rest x)))
+                                                           (stringSquish (rest x))
+                                                           squishQueue))))))
        (else (begin
                (set! squishQueue (append squishQueue (list (first x))))
                (if (not (empty? (rest x)))
                    (stringSquish (rest x))
                    squishQueue)))))
     (else (cond
-            ((equal? "\"" (substring (first x) (- (string-length (first x)) 1) (string-length (first x)))) (begin
-                                                                                                      (set! quoteFlag #f)
-                                                                                                      (set! messageQueue (append messageQueue (list (first x))))
-                                                                                                      (set! squishQueue (append squishQueue (list (string-join messageQueue))))
-                                                                                                      (set! messageQueue '())
-                                                                                                      (if (not (empty? (rest x)))
-                                                                                                          (stringSquish (rest x))
-                                                                                                          squishQueue)))
+            ((equal? "\"" (substring (first x) (- (string-length (first x)) 1) (string-length (first x))))
+             (begin
+               (set! quoteFlag #f)
+               (set! messageQueue (append messageQueue (list (first x))))
+               (set! squishQueue (append squishQueue (list (string-join messageQueue))))
+               (set! messageQueue '())
+               (if (not (empty? (rest x)))
+                   (stringSquish (rest x))
+                   squishQueue)))
             (else (begin
                     (set! messageQueue (append messageQueue (list (first x))))
                     (if (not (empty? (rest x)))
