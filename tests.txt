@@ -1,0 +1,35 @@
+10 <= LOOP DROP DUP POP + SAVE 1 + DUP 10 <= LOOP DROP DUP POP + SAVE 1 + DUP POOL POOL
+
+0
+50 <= LOOP DROP DUP DUP 1 + . POOL
+
+10
+
+> 0 LOOP 1 SWAP - POOL
+
+(getLoopBody '("DROP" "DUP" "POP" "+" "SAVE" "1" "+" "DUP" "POOL"))
+
+/
+
+50 <= LOOP DROP DUP DUP 1 + . 30 <= LOOP DROP DUP . POOL POOL
+
+
+1 to 50:
+
+50 < LOOP DROP 1 +  DUP . POOL
+
+
+
+50 < LOOP DROP 1 + DUP 30 < LOOP . POOL DROP POOL
+
+
+(getLoopBody '("LOOP" "SWAP" "DUP" "LOOP" "DROP" "POOL" "POP" "POOL" "CLEAR") 0)
+
+A working nested loop:
+
+10 < LOOP DROP DUP 10 < LOOP DROP 1 + DUP POOL DROP POP 1 + DUP DUP POOL
+
+10 < LOOP DROP DUP 10 < LOOP DROP 1 + DUP DUP 3 > IF . ELSE THEN POOL DROP POP 1 + DUP DUP POOL
+
+(1a) A factorial function. The value you want to get the factorial of should be pushed onto the stack before calling:
+FUNC factorial dup pop save 1 > LOOP DROP SAVE 1 SWAP - DUP POP * SAVE POOL DROP CNUF
