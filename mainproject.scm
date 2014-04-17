@@ -320,9 +320,11 @@
         (cond
           ((string-ci=? "IF" (first input)) (push_grammar(first input)))
           ((string-ci=? "LOOP" (first input)) (push_grammar(first input)))
+          ((string-ci=? "FUNC" (first input)) (push_grammar(first input)))
           ((string-ci=? "ELSE" (first input)) (if (string-ci=? "IF" (first grammarStack)) (set-car! grammarStack (first input)) (set! errFree #f))) 
           ((string-ci=? "THEN" (first input)) (if (string-ci=? "ELSE" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f)))
-          ((string-ci=? "POOL" (first input)) (if (string-ci=? "LOOP" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f))))))
+          ((string-ci=? "POOL" (first input)) (if (string-ci=? "LOOP" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f)))
+          ((string-ci=? "CNUF" (first input)) (if (string-ci=? "FUNC" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f))))))
                         
   (if errFree
       (begin
