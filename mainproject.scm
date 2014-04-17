@@ -12,8 +12,9 @@
 (define ifQueue '())
 (define ignore #f)
 (define lastConditional '())
-(define loopCount 0)
-(define test '())
+(define quoteFlag #f)
+(define squishQueue '())
+(define  messageQueue '())
 
 (define (read-keyboard-as-string) ; this function returns keyboard input as a string
             (let ((char (read-char)))
@@ -30,6 +31,43 @@
               )
             )
 )
+
+(define (string-join x)
+  (cond 
+    ((empty? (rest x))
+     (first x))
+    (else (string-append (first x) " " (string-join (rest x))))))
+
+(define (stringSquish x)
+  (cond
+    ((not quoteFlag)
+     (cond
+       ((equal? "\"" (substring (first x) 0 1)) (begin
+                                          (set! quoteFlag #t)
+                                          (set! messageQueue (append messageQueue (list (first x))))
+                                          (if (not (empty? (rest x)))
+                                              (stringSquish (rest x))
+                                              squishQueue)))
+       (else (begin
+               (set! squishQueue (append squishQueue (list (first x))))
+               (if (not (empty? (rest x)))
+                   (stringSquish (rest x))
+                   squishQueue)))))
+    (else (cond
+            ((equal? "\"" (substring (first x) (- (string-length (first x)) 1) (string-length (first x)))) (begin
+                                                                                                      (set! quoteFlag #f)
+                                                                                                      (set! messageQueue (append messageQueue (list (first x))))
+                                                                                                      (set! squishQueue (append squishQueue (list (string-join messageQueue))))
+                                                                                                      (set! messageQueue '())
+                                                                                                      (if (not (empty? (rest x)))
+                                                                                                          (stringSquish (rest x))
+                                                                                                          squishQueue)))
+            (else (begin
+                    (set! messageQueue (append messageQueue (list (first x))))
+                    (if (not (empty? (rest x)))
+                        (stringSquish (rest x))
+                        squishQueue)))))))
+       
 
 (define (push_grammar element)
   (set! grammarStack (append (list element) grammarStack) 
@@ -91,23 +129,23 @@
 (define (IF x tv)
   (cond
     ((not tv) (cond
-                 ((string=? "IF" (first x)) (begin
+                 ((string-ci=? "IF" (first x)) (begin
                                               (set! ifCount (+ ifCount 1))
                                               (IF (rest x) #f)))
-                 ((string=? "THEN" (first x)) (begin
+                 ((string-ci=? "THEN" (first x)) (begin
                                                 (set! ifCount (- ifCount 1))
                                                 (IF (rest x) #f)))
-                 ((string=? "ELSE" (first x)) (cond 
+                 ((string-ci=? "ELSE" (first x)) (cond 
                                                    ((= 0 ifCount) (IF (rest x) #t))
                                                    (else (IF (rest x) #f))))
                  (else (IF (rest x) #f))))
     (else (begin
             (if (not ignore) (set! ifQueue (append ifQueue (list (first x)))))
             (cond
-              ((string=? "IF" (first x)) (begin
+              ((string-ci=? "IF" (first x)) (begin
                                            (set! ifCount (+ ifCount 1))
                                            (IF (rest x) #t)))
-              ((string=? "THEN" (first x)) (cond
+              ((string-ci=? "THEN" (first x)) (cond
                                              ((= 0 ifCount) (begin
                                                               (if (not ignore)
                                                                   (set! ifQueue (reverse (cdr (reverse ifQueue)))))
@@ -117,7 +155,7 @@
                                              (else (begin
                                                      (set! ifCount (- ifCount 1))
                                                      (IF (rest x) #t)))))
-              ((string=? "ELSE" (first x)) (cond 
+              ((string-ci=? "ELSE" (first x)) (cond 
                                              ((= 0 ifCount) (begin
                                                               (set! ignore #t)
                                                               (set! ifQueue (reverse (cdr (reverse ifQueue))))
@@ -243,8 +281,12 @@
 
 (define (main)
   (display "UofL> ")
-  (let
+  (set! quoteFlag #f)
+  (set! messageQueue '())
+  (set! squishQueue '())
+  (let 
    ((input-list (regexp-split #px" " (read-keyboard-as-string))))
+    (set! input-list (stringSquish input-list))
     (set! currentCommand '())
     (set! grammarStack '())
     (if (grammar-check input-list)
@@ -263,11 +305,11 @@
       (begin  
         (set! currentCommand (append currentCommand (list (first input))))
         (cond
-          ((string=? "IF" (first input)) (push_grammar(first input)))
-          ((string=? "LOOP" (first input)) (push_grammar(first input)))
-          ((string=? "ELSE" (first input)) (if (string=? "IF" (first grammarStack)) (set-car! grammarStack (first input)) (set! errFree #f))) 
-          ((string=? "THEN" (first input)) (if (string=? "ELSE" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f)))
-          ((string=? "POOL" (first input)) (if (string=? "LOOP" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f))))))
+          ((string-ci=? "IF" (first input)) (push_grammar(first input)))
+          ((string-ci=? "LOOP" (first input)) (push_grammar(first input)))
+          ((string-ci=? "ELSE" (first input)) (if (string-ci=? "IF" (first grammarStack)) (set-car! grammarStack (first input)) (set! errFree #f))) 
+          ((string-ci=? "THEN" (first input)) (if (string-ci=? "ELSE" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f)))
+          ((string-ci=? "POOL" (first input)) (if (string-ci=? "LOOP" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f))))))
                         
   (if errFree
       (begin
@@ -280,7 +322,10 @@
                        (set! return #t)
                        (set! return #f)))
                   (begin
-                    (if (grammar-check(regexp-split #px" " (read-keyboard-as-string)))
+                    (set! quoteFlag #f)
+                    (set! messageQueue '())
+                    (set! squishQueue '())
+                    (if (grammar-check(stringSquish(regexp-split #px" " (read-keyboard-as-string))))
                         (set! return #t)
                         (set! return #f)))))))
       (set! return #f))
@@ -288,9 +333,6 @@
 ))
 
 (define parse-input (lambda (input)
-                      (display "PROCESSING: ")
-                      (display input)
-                      (display #\newline)
   (cond
     ((string-ci=? "" (first input)) )
     ((string-ci=? "\t" (first input)) )
@@ -319,26 +361,28 @@
                                          (set! lastConditional '())
                                          (set! lastConditional (append (list (number->string x)) (list ">=")))
                                      ))
-    ((string=? "SWAP" (first input)) (SWAP))
-    ((string=? "DUP" (first input)) (DUP))
-    ((string=? "POP" (first input)) (SAVE_POP))
-    ((string=? "SAVE" (first input)) (SAVE))
-    ((string=? "DROP" (first input)) (DROP))
-    ((string=? "CLEAR" (first input)) (CLEAR))
-    ((string=? "STACK" (first input)) (STACK stack))
-    ((string=? "IF" (first input)) (begin
+    ((string-ci=? "SWAP" (first input)) (SWAP))
+    ((string-ci=? "DUP" (first input)) (DUP))
+    ((string-ci=? "POP" (first input)) (SAVE_POP))
+    ((string-ci=? "SAVE" (first input)) (SAVE))
+    ((string-ci=? "DROP" (first input)) (DROP))
+    ((string-ci=? "CLEAR" (first input)) (CLEAR))
+    ((string-ci=? "STACK" (first input)) (STACK stack))
+    ((string-ci=? "IF" (first input)) (begin
                                      (set! ifCount 0)
                                      (set! ifQueue '())
                                      (set! ignore #f)
                                      (IF (rest input) (first stack))))
-    ((string=? "LOOP" (first input)) (if (first stack) (LOOP (rest input) ) () ))
-    ((string=? "FUNC" (first input)) (FUNC (rest input)) )
-    ((string=? "." (first input)) 
-     ( let ()
-        (if (> (length input) 1)
-            (display (string->stringList input))
-            (display (first stack))) 
-        (display #\newline)))
+    ((string-ci=? "LOOP" (first input)) (if (first stack) (LOOP (rest input) ) () ))
+    ((string-ci=? "FUNC" (first input)) (FUNC (rest input)) )
+    ((string-ci=? "." (first input)) 
+     (cond
+       ((not (empty? (rest input))) (begin
+                                      (display (cadr input))
+                                      (display #\newline)
+                                      (if (not (empty? (cddr input)))
+                                          (parse-input (cddr input)))))
+       (else (first STACK))))
     (else (if (checkExistingFuncs (first input) funcNames) 
               (callUserFunc (first input) ) 
               (begin 
@@ -352,7 +396,7 @@
                       
                       ;borat when clause. 'nawt nawt nawt'
                       ;THIS STATEMENT EXECUTES NOT
-   (when (and (and (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input)))) (not (string-ci=? "func" (first input))) (not (string-ci=? "if" (first input)))))
+   (when (and (and (and (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input)))) (not (string-ci=? "func" (first input)))) (not (string-ci=? "if" (first input)))) (not (string-ci=? "." (first input))))
        (parse-input (rest input))
        
      )
@@ -362,3 +406,5 @@
 (define (string->stringList input)
   (apply string-append ( rest ( apply append (map (lambda (x) (list " " x)) (rest input)))))
 )
+
+(main)
