@@ -11,6 +11,9 @@
 (define ifCount 0)
 (define ifQueue '())
 (define ignore #f)
+(define lastConditional '())
+(define loopCount 0)
+(define test '())
 
 (define (read-keyboard-as-string) ; this function returns keyboard input as a string
             (let ((char (read-char)))
@@ -67,7 +70,7 @@
   )
 
 (define (SWAP)
-  (define x (first stack))
+  (define x (first stack))x
   (SAVE_POP)
   (SAVE_POP)
   (push_back x)
@@ -123,23 +126,60 @@
                                               (IF (rest x) #t))))
               (else (IF (rest x) #t)))))))
 
-; truth condition is already on top of the stack
-(define (LOOP x)
-  ; Assuming that "LOOP" is parsed
-  ; if true (?)
-  ;   If pool
-  ;      parse-input currentCommand
-  ;   If not
-  ;      execute first x
-  (cond
-    ((string-ci=? "pool" (first x)) (parse-input currentCommand))
-    (else 
-     (begin
-      (parse-input (list (first x)))
-      (LOOP (rest x)))
+(define (LOOP conditional body afterInstructions)
+  ;if true
+    ;do body
+    ;evaluate condition
+    ;call loop.
+  (if (first stack)
+      (begin
+       (parse-input body)
+       (parse-input conditional)
+       (LOOP conditional body afterInstructions)
+       ; Execute remainder of instructions
+        )
+        (parse-input afterInstructions)
+    )
+ )
+
+; Returns a list of instructions that happen after a loop is closed.
+(define (getAfterInstructions input)
+  (define reversed (reverse input))
+  (define getInstructions (lambda (x)
+     (if (not(string=? (first x) "POOL"))
+         (append (getInstructions (rest x)) (list (first x)))
+         '()
+         )
+  ))
+  
+  (getInstructions reversed)
+)
+
+(define (getLoopBody input)
+  ; Nothing left to do
+    (if (= 0 (length input))
+      '()
+      (begin
+  
+  ; Change based on condition
+   (cond
+    ((string-ci=? "loop" (first input)) (set! loopCount (+ 1 loopCount)))
+    ((string-ci=? "pool" (first input))
+      (set! loopCount (- loopCount 1))
      )
+    )
+
+  ;
+  (if (>= loopCount 0)
+      (begin
+        (if (integer? (first input))
+            (append (number->string (first input)) (getLoopBody (rest input)))
+            (append (list (first input)) (getLoopBody (rest input)))
+            ))
+      '()
    )
-  )
+ )))
+
 
 (define (FUNC funcCommands)
   (define tempList '() )
@@ -200,10 +240,6 @@
       )
   exists ;return the result 
   )
-  
-                          
-   
-  
 
 (define (main)
   (display "UofL> ")
@@ -252,6 +288,9 @@
 ))
 
 (define parse-input (lambda (input)
+                      (display "PROCESSING: ")
+                      (display input)
+                      (display #\newline)
   (cond
     ((string-ci=? "" (first input)) )
     ((string-ci=? "\t" (first input)) )
@@ -260,10 +299,26 @@
     ((string=? "-" (first input)) (push_back (- (POP) (POP))))
     ((string=? "/" (first input)) (push_back (/ (POP) (POP))))
     ((string=? "*" (first input)) (push_back (* (POP) (POP))))
-    ((string=? ">" (first input)) (begin (SWAP) (push_back (> (POP) (POP)))))
-    ((string=? "<" (first input)) (begin (SWAP) (push_back (< (POP) (POP)))))
-    ((string=? ">=" (first input)) (begin (SWAP) (push_back (>= (POP) (POP)))))
-    ((string=? "<=" (first input)) (begin (SWAP) (push_back (<= (POP) (POP)))))
+    ((string=? ">" (first input)) (let() (define x (POP))
+                                         (push_back (> (POP) x))
+                                         (set! lastConditional (append (list (number->string x)) (list ">")))
+                                         ))
+    ((string=? "<" (first input)) (let() (define x (POP))
+                                         (push_back (< (POP) x))
+                                         (set! lastConditional (append (list (number->string x)) (list "<")))
+
+                                         ))
+    ((string=? "<=" (first input)) (let()(define x (POP))
+                                         (push_back (<= (POP) x))
+                                         (set! lastConditional '()) 
+                                         (set! lastConditional (append (list (number->string x)) (list "<=")))
+                                         ))
+    
+    ((string=? ">=" (first input)) (let()(define x (POP))
+                                         (push_back (>= (POP) x))
+                                         (set! lastConditional '())
+                                         (set! lastConditional (append (list (number->string x)) (list ">=")))
+                                     ))
     ((string=? "SWAP" (first input)) (SWAP))
     ((string=? "DUP" (first input)) (DUP))
     ((string=? "POP" (first input)) (SAVE_POP))
@@ -307,5 +362,3 @@
 (define (string->stringList input)
   (apply string-append ( rest ( apply append (map (lambda (x) (list " " x)) (rest input)))))
 )
-
-(main)
