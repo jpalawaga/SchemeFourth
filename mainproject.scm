@@ -6,6 +6,7 @@
 (define curFunc '())
 (define funcList (make-hash-table) )
 (define funcDefStarted #f)
+(define grammarStack '())
 
 (define (read-keyboard-as-string) ; this function returns keyboard input as a string
             (let ((char (read-char)))
@@ -23,6 +24,11 @@
             )
 )
 
+(define (push_grammar element)
+  (set! grammarStack (append (list element) grammarStack) 
+       )
+  )
+  
 (define (push_back element) 
   (set! stack (append (list element) stack) 
        )
@@ -135,12 +141,48 @@
 (define (main)
   (display "UofL> ")
   (let
-      ((input-list (regexp-split #px" " (read-keyboard-as-string))))
-    (set! currentCommand input-list)
-    (parse-input input-list)
+   ((input-list (regexp-split #px" " (read-keyboard-as-string))))
+    (set! currentCommand '())
+    (set! grammarStack '())
+    (if (grammar-check input-list)
+        (parse-input currentCommand)
+        (begin
+          (display "Grammatical Error")
+          (display #\newline)))
     (main)
     )
   )
+
+(define grammar-check (lambda (input)
+  (define errFree #t)
+  (define return #t) 
+  (if (string? (first input))
+      (begin  
+        (set! currentCommand (append currentCommand (list (first input))))
+        (cond
+          ((string-ci=? "if" (first input)) (push_grammar(first input)))
+          ((string-ci=? "loop" (first input)) (push_grammar(first input)))
+          ((string-ci=? "else" (first input)) (if (string-ci=? "if" (first grammarStack)) (set-cdr! grammarStack (first input)) (set! errFree #f))) 
+          ((string-ci=? "then" (first input)) (if (string-ci=? "else" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f)))
+          ((string-ci=? "pool" (first input)) (if (string-ci=? "loop" (first grammarStack)) (set! grammarStack (rest grammarStack)) (set! errFree #f))))))
+                        
+  (if errFree
+      (begin
+        (if (and (empty? grammarStack) (empty? (rest input)))
+            (set! return #t)
+            (begin
+              (if (not (empty? (rest input)))
+                  (begin
+                    (if(grammar-check(rest input))
+                       (set! return #t)
+                       (set! return #f)))
+                  (begin
+                    (if (grammar-check(regexp-split #px" " (read-keyboard-as-string)))
+                        (set! return #t)
+                        (set! return #f)))))))
+      (set! return #f))
+   return                 
+))
 
 (define parse-input (lambda (input)
   (cond
