@@ -3,6 +3,9 @@
 (define stack '())
 (define tempArea '())
 (define currentCommand '())
+(define curFunc '())
+(define funcList (make-hash-table) )
+(define funcDefStarted #f)
 
 (define (read-keyboard-as-string) ; this function returns keyboard input as a string
             (let ((char (read-char)))
@@ -91,15 +94,53 @@
    )
   )
 
+(define (FUNC funcCommands)
+  (define tempList '() )
+  (if (equal? funcDefStarted #f) ;check if the definition has not been started yet
+      ;create a new hash with the function name as the first element of commands list with the result of the commands until "CNUF" 
+      (begin ; definition not started yet
+       (set! funcDefStarted #t) ; start definition
+       (hash-table-put! funcList (first funcCommands) (FUNC (rest funcCommands) ) ) 
+       (set! funcDefStarted #f)
+       ; display resulting function 
+       (display (hash-table-get funcList (first funcCommands) ) )
+       (display #\newline)
+       
+        
+       ) 
+      
+      ;definition has been started 
+      (if (string? (first funcCommands) ) ;checks to see if first element is a string
+          ; it is a string
+          (if (string-ci=? (first funcCommands) "CNUF" ) ;is the string "CNUF" 
+              ; it is "CNUF", return empty list
+              (begin 
+                (parse-input (rest funcCommands))
+                 '()
+                 )
+              ; it isn't "CNUF", return result of rest of command list by appending first element and the result of calling FUNC with the rest of the list
+              (append (list (first funcCommands) ) (FUNC (rest funcCommands) ) )
+                       ; should return the resulting list after both appends  
+               )
+          ; it isn't a string 
+           (append (list (first funcCommands)) (FUNC (rest funcCommands) ) )
+          
+        ) 
+      ); end of function definition if
+  
+  )
+  
+  
+
 (define (main)
   (display "UofL> ")
   (let
-   ((input-list (regexp-split #px" " (read-keyboard-as-string))))
+      ((input-list (regexp-split #px" " (read-keyboard-as-string))))
     (set! currentCommand input-list)
     (parse-input input-list)
     (main)
+    )
   )
-)
 
 (define parse-input (lambda (input)
   (cond
@@ -120,18 +161,23 @@
     ((string-ci=? "clear" (first input)) (CLEAR))
     ((string-ci=? "stack" (first input)) (STACK stack))
     ((string-ci=? "loop" (first input)) (if (first stack) (LOOP (rest input) ) () ))
+    ((string-ci=? "func" (first input)) (FUNC (rest input)) )
     ((string-ci=? "." (first input)) 
      ( let ()
-      (if (> (length input) 1)
-         (display (string->stringList input))
-          (display (first stack)))
-      (display #\newline)))
+        (if (> (length input) 1)
+            (display (string->stringList input))
+            (display (first stack)))
+        (display #\newline)))
     )
-   (when (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input))))
+                      
+                      ;borat when clause. 'nawt nawt nawt'
+                      ;THIS STATEMENT EXECUTES NOT
+   (when (and (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input)))) (not (string-ci=? "func" (first input))))
        (parse-input (rest input))
        
      )
   ))
+  
 
 (define (string->stringList input)
   (apply string-append ( rest ( apply append (map (lambda (x) (list " " x)) (rest input)))))
