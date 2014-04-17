@@ -382,7 +382,7 @@
                                       (display #\newline)
                                       (if (not (empty? (cddr input)))
                                           (parse-input (cddr input)))))
-       (else (first STACK))))
+       (else (begin (display(first stack)) (display #\newline)))))
     (else (if (checkExistingFuncs (first input) funcNames) 
               (callUserFunc (first input) ) 
               (begin 
@@ -399,7 +399,7 @@
    (when (and (and (and (and (> (length (rest input)) 0) (not (string-ci=? "loop" (first input)))) (not (string-ci=? "func" (first input)))) (not (string-ci=? "if" (first input)))) (not (string-ci=? "." (first input))))
        (parse-input (rest input))
          
-  ))
+  )))
   
 
 (define (string->stringList input)
