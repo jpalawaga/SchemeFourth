@@ -1,5 +1,5 @@
 (1a) A factorial function. The value you want to get the factorial of should be pushed onto the stack before calling:
-FUNC factorial dup pop save 1 > LOOP DROP SAVE 1 SWAP - DUP POP * SAVE POOL DROP CNUF
+FUNC factorial dup pop save 1 > LOOP DROP SAVE 1 - DUP POP * SAVE POOL DROP CNUF
 
 (2)
 Define these functions before starting the loop:

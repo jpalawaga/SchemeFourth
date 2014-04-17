@@ -121,11 +121,12 @@
   )
 
 (define (SWAP)
-  (define x (first stack))x
-  (SAVE_POP)
-  (SAVE_POP)
+  (define x (first stack))
+  (define y (first (rest stack)))
+  (POP)
+  (POP)
   (push_back x)
-  (SAVE)
+  (push_back y)
   )
 
 (define (CLEAR)
@@ -353,8 +354,8 @@
     ((string-ci=? "\t" (first input)) )
     ((string->number (first input)) (push_back (string->number (first input))))
     ((string=? "+" (first input)) (push_back (+ (POP) (POP))))
-    ((string=? "-" (first input)) (push_back (- (POP) (POP))))
-    ((string=? "/" (first input)) (push_back (/ (POP) (POP))))
+    ((string=? "-" (first input)) (begin (SWAP) (push_back (- (POP) (POP)))))
+    ((string=? "/" (first input)) (begin (SWAP) (push_back (/ (POP) (POP)))))
     ((string=? "*" (first input)) (push_back (* (POP) (POP))))
     ((string=? ">" (first input)) (let() (define x (POP))
                                          (push_back (> (POP) x))
